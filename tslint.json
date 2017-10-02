@@ -6,6 +6,12 @@
         "max-classes-per-file": [false],
         "no-bitwise": false,
         "object-literal-sort-keys": false,
-        "semicolon": [true, "always", "ignore-bound-class-methods"]
+        "semicolon": [true, "always", "ignore-bound-class-methods"],
+        "variable-name": [
+            true,
+            "ban-keywords",
+            "check-format",
+            "allow-leading-underscore"
+        ]
     }
 }
