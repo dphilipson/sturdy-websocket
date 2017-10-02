@@ -16,5 +16,43 @@
         "email": "david.philipson@gmail.com"
     },
     "author": "David Philipson <david.philipson@gmail.com> (http://dphil.me)",
-    "license": "MIT"
+    "license": "MIT",
+    "scripts": {
+        "build": "yarn run clean && tsc -p tsconfig.build.json",
+        "clean": "rm -rf dist/*",
+        "format": "prettier --write",
+        "generate-toc": "markdown-toc -i",
+        "jest": "jest",
+        "jest-watch": "yarn run jest -- --watch",
+        "lint": "tslint --project .",
+        "precommit": "lint-staged",
+        "prepare": "yarn run build",
+        "test": "npm-run-all lint typecheck jest",
+        "typecheck": "tsc"
+    },
+    "jest": {
+        "transform": {
+            ".(ts|tsx)": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+        },
+        "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$",
+        "moduleFileExtensions": ["ts", "tsx", "js"],
+        "mapCoverage": true
+    },
+    "lint-staged": {
+        "*.{js,json}": ["format", "git add"],
+        "*.{ts,tsx}": ["yarn run lint -- --fix", "format", "git add"],
+        "*.md": ["generate-toc", "git add"]
+    },
+    "devDependencies": {
+        "@types/jest": "^21.1.1",
+        "husky": "^0.14.3",
+        "jest": "^21.2.1",
+        "lint-staged": "^4.2.3",
+        "markdown-toc": "^1.2.0",
+        "npm-run-all": "^4.1.1",
+        "prettier": "^1.7.3",
+        "ts-jest": "^21.0.1",
+        "tslint": "^5.7.0",
+        "typescript": "^2.5.3"
+    }
 }
