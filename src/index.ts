@@ -120,6 +120,7 @@ export default class RobustWebsocket implements WebSocket {
             this.ws.close(code, reason);
         }
         this.shutdown();
+        this.debugLog("WebSocket permanently closed by client.");
     }
 
     public send(data: any): void {
@@ -182,6 +183,7 @@ export default class RobustWebsocket implements WebSocket {
             return;
         }
         const { connectTimeout, wsFactory } = this.options;
+        this.debugLog(`Opening new WebSocket to ${this._url}.`);
         const ws = wsFactory(this._url, this.protocols);
         ws.onclose = event => this.handleClose(event);
         ws.onerror = event => this.handleError(event);
@@ -199,6 +201,8 @@ export default class RobustWebsocket implements WebSocket {
         if (this.isClosed) {
             return;
         }
+        const { allClearResetTime } = this.options;
+        this.debugLog("WebSocket opened.");
         this.ws = ws;
         ws.binaryType = this._binaryType;
         this.clearConnectTimeout();
@@ -208,7 +212,12 @@ export default class RobustWebsocket implements WebSocket {
         this.allClearTimeoutId = setTimeout(() => {
             this.clearAllClearTimeout();
             this.nextRetryTime = 0;
-        }, this.options.allClearResetTime);
+            const openTime = (allClearResetTime / 1000) | 0;
+            this.debugLog(
+                `WebSocket remained open for ${openTime} seconds. Resetting` +
+                    " retry time.",
+            );
+        }, allClearResetTime);
     }
 
     private handleMessage(event: MessageEvent): void {
@@ -237,6 +246,7 @@ export default class RobustWebsocket implements WebSocket {
 
     private handleError(event: Event): void {
         this.dispatchEvent(event);
+        this.debugLog("WebSocket encountered an error.");
     }
 
     private reconnect(): void {
@@ -254,6 +264,10 @@ export default class RobustWebsocket implements WebSocket {
             ),
         );
         setTimeout(() => this.openNewWebSocket(), retryTime);
+        const retryTimeSeconds = (retryTime / 1000) | 0;
+        this.debugLog(
+            `WebSocket was closed. Re-opening in ${retryTimeSeconds} seconds.`,
+        );
     }
 
     private shutdown(): void {
