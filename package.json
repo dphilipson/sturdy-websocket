@@ -1,0 +1,20 @@
+{
+    "name": "robust-websocket",
+    "version": "0.1.0",
+    "description":
+        "Tiny WebSocket wrapper that reconnects and buffers missed messages.",
+    "main": "dist/index.js",
+    "types": "dist/index",
+    "files": ["dist/"],
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/dphilipson/robust-websocket.git"
+    },
+    "homepage": "https://github.com/dphilipson/robust-websocket",
+    "bugs": {
+        "url": "https://github.com/dphilipson/robust-websocket/issues",
+        "email": "david.philipson@gmail.com"
+    },
+    "author": "David Philipson <david.philipson@gmail.com> (http://dphil.me)",
+    "license": "MIT"
+}
