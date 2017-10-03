@@ -1,12 +1,12 @@
 import { w3cwebsocket } from "websocket";
 import { Server } from "ws";
-import RobustWebSocket from "../src/index";
+import SturdyWebSocket from "../src/index";
 
 const PORT = 9327;
 const URL = `ws://localhost:${PORT}`;
 
 let server: Server;
-let ws: RobustWebSocket;
+let ws: SturdyWebSocket;
 
 // Be careful to always assign created websockets to the top-level ws variable
 // so they get cleaned up after the test, or otherwise close them manually.
@@ -21,7 +21,7 @@ afterEach(() => {
 describe("basic functionality", () => {
     it("should make a connection like a normal WebSocket", done => {
         setupEchoServer();
-        ws = new RobustWebSocket(URL, { constructor: w3cwebsocket });
+        ws = new SturdyWebSocket(URL, { constructor: w3cwebsocket });
         const ondown = jest.fn();
         const onreopen = jest.fn();
         const onclose = jest.fn();
@@ -52,7 +52,7 @@ describe("basic functionality", () => {
                     fail("More connections made than expected.");
             }
         });
-        ws = new RobustWebSocket(URL, { constructor: w3cwebsocket });
+        ws = new SturdyWebSocket(URL, { constructor: w3cwebsocket });
         const ondown = jest.fn();
         const onreopen = jest.fn();
         const onclose = jest.fn();
@@ -78,7 +78,7 @@ describe("basic functionality", () => {
                 connectCount < 3 ? "Minor error" : "Grievous error",
             );
         });
-        ws = new RobustWebSocket(URL, {
+        ws = new SturdyWebSocket(URL, {
             constructor: w3cwebsocket,
             minReconnectDelay: 10,
             shouldReconnect: event => event.reason === "Minor error",
@@ -95,14 +95,14 @@ describe("basic functionality", () => {
             expect(connection.protocol).toEqual("some-protocol");
             done();
         });
-        ws = new RobustWebSocket(URL, "some-protocol", {
+        ws = new SturdyWebSocket(URL, "some-protocol", {
             constructor: w3cwebsocket,
         });
     });
 
     it("should work with event listeners", done => {
         setupEchoServer();
-        ws = new RobustWebSocket(URL, { constructor: w3cwebsocket });
+        ws = new SturdyWebSocket(URL, { constructor: w3cwebsocket });
         ws.addEventListener("open", () => ws.send("Echo??"));
         ws.addEventListener("message", event => {
             expect(event.data).toEqual("Echo??");
@@ -119,7 +119,7 @@ describe("basic functionality", () => {
         const oldGlobalWebSocket = wsGlobal.WebSocket;
         wsGlobal.WebSocket = w3cwebsocket;
         try {
-            ws = new RobustWebSocket(URL);
+            ws = new SturdyWebSocket(URL);
         } finally {
             wsGlobal.WebSocket = oldGlobalWebSocket;
         }
@@ -132,7 +132,7 @@ describe("basic functionality", () => {
         const oldGlobalWebSocket = wsGlobal.WebSocket;
         wsGlobal.WebSocket = undefined;
         try {
-            expect(() => (ws = new RobustWebSocket(URL))).toThrow(/global/);
+            expect(() => (ws = new SturdyWebSocket(URL))).toThrow(/global/);
         } finally {
             wsGlobal.WebSocket = oldGlobalWebSocket;
         }
@@ -163,7 +163,7 @@ describe("retry backoff", () => {
         server.on("connection", connection => {
             connection.close();
         });
-        ws = new RobustWebSocket(URL, {
+        ws = new SturdyWebSocket(URL, {
             constructor: w3cwebsocket,
             minReconnectDelay: 1,
             maxReconnectDelay: 9,
@@ -199,7 +199,7 @@ describe("buffering", () => {
             );
         }, 20);
 
-        ws = new RobustWebSocket(URL, {
+        ws = new SturdyWebSocket(URL, {
             constructor: w3cwebsocket,
             minReconnectDelay: 10,
         });
@@ -217,7 +217,7 @@ describe("connect timeout", () => {
             close: jest.fn(() => wsMock.onclose()),
         };
         const constructorMock = jest.fn(() => wsMock);
-        ws = new RobustWebSocket("", {
+        ws = new SturdyWebSocket("", {
             connectTimeout: 100,
             constructor: constructorMock,
         });

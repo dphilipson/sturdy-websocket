@@ -1,9 +1,9 @@
-# Robust WebSocket
+# Sturdy WebSocket
 
 Tiny WebSocket wrapper that reconnects and resends failed messages.
 
 [![Build
-Status](https://travis-ci.org/dphilipson/robust-websocket.svg?branch=master)](https://travis-ci.org/dphilipson/robust-websocket)
+Status](https://travis-ci.org/dphilipson/sturdy-websocket.svg?branch=master)](https://travis-ci.org/dphilipson/sturdy-websocket)
 
 ## Table of Contents
 
@@ -31,14 +31,14 @@ Status](https://travis-ci.org/dphilipson/robust-websocket.svg?branch=master)](ht
 
 ## Introduction
 
-Robust WebSocket is a small (< 4kb gzipped) wrapper around a WebSocket that
+Sturdy WebSocket is a small (< 4kb gzipped) wrapper around a WebSocket that
 reconnects when the WebSocket closes. If `send()` is called while the WebSocket
 is closed, then the messages are stored in a buffer and sent once the connection
 is reestablished.
 
 ## Usage
 
-`RobustWebSocket` fully implements the WebSocket API, as described [by
+`SturdyWebSocket` fully implements the WebSocket API, as described [by
 MDN](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket), including the
 ready state constants, `EventTarget` interface, and properties that you probably
 don't care about like `bufferedAmount`. This means that it can be used as a
@@ -47,9 +47,9 @@ that consume WebSockets.
 
 Example:
 ```js
-import RobustWebSocket from "robust-websocket";
+import SturdyWebSocket from "sturdy-websocket";
 
-const ws = new RobustWebSocket("wss://example.com");
+const ws = new SturdyWebSocket("wss://example.com");
 ws.onopen = () => ws.send("Hello!");
 ws.onmessage = event => console.log("I got a message that says " + event.data);
 // Or if you prefer event listeners:
@@ -57,22 +57,22 @@ ws.addEventListener("message", event =>
     console.log("I already said this, but the message says " + event.data));
 
 // Like the normal constructor, the protocol can be given as a second argument.
-const wsWithProtocol = new RobustWebSocket("wss://foo.com", "some-protocol");
+const wsWithProtocol = new SturdyWebSocket("wss://foo.com", "some-protocol");
 
 // Options can be provided as the final argument.
-const wsWithOptions = new RobustWebSocket("wss://bar.com", {
+const wsWithOptions = new SturdyWebSocket("wss://bar.com", {
     connectTimeout: 5000,
     maxReconnectAttempts: 5
     reconnectBackoffFactor: 1.3
 });
 ```
 Because it is imitating a regular WebSocket, `onclose` will only be called once,
-after the `RobustWebSocket` is closed permanently either by using `close()` or
+after the `SturdyWebSocket` is closed permanently either by using `close()` or
 because the `shouldReconnect` option returned false. If you are interested in
 being notified when the backing connection is temporarily down, you may listen
 for the additional events `"down"` and `"reopen"`:
 ```js
-const ws = new RobustWebSocket("wss://example.com");
+const ws = new SturdyWebSocket("wss://example.com");
 ws.ondown = closeEvent => console.log("Closed for reason " + closeEvent.reason);
 ws.onreopen = () => console.log("We're back up!");
 // Or with event listeners
@@ -83,17 +83,17 @@ ws.addEventListener("down", closeEvent => "Yea, it's down.");
 
 With Yarn:
 ```
-yarn add robust-websocket
+yarn add sturdy-websocket
 ```
 
 With NPM:
 ```
-npm add --save robust-websocket
+npm add --save sturdy-websocket
 ```
 
 ## Full API
 
-As discussed above, `RobustWebSocket` starts off by fully implementing the
+As discussed above, `SturdyWebSocket` starts off by fully implementing the
 [WebSocket API](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket).
 Only features beyond the standard API are discussed below.
 
@@ -102,10 +102,10 @@ Only features beyond the standard API are discussed below.
 Options are passed as an optional final argument to the constructor, for
 example:
 ```js
-import RobustWebSocket from "robust-websocket";
+import SturdyWebSocket from "sturdy-websocket";
 
-const ws1 = new RobustWebSocket("wss://foo.com", { maxReconnectAttempts: 5 });
-const ws2 = new RobustWebSocket("wss://bar.com", "some-protocol", {
+const ws1 = new SturdyWebSocket("wss://foo.com", { maxReconnectAttempts: 5 });
+const ws2 = new SturdyWebSocket("wss://bar.com", "some-protocol", {
     connectTimeout: 4000,
     reconnectBackoffFactor: 1.3
 });
@@ -138,7 +138,7 @@ than the default. This may be useful in environments where `WebSocket` is not
 available as a global variable, such as Node.js.
 
 If this option is not provided and there is no variable named `WebSocket` in the
-global scope, then the `RobustWebSocket` constructor will throw.
+global scope, then the `SturdyWebSocket` constructor will throw.
 
 #### `debug`
 
@@ -166,7 +166,7 @@ repeatedly use this as their delay.
 
 Default: Infinity
 
-If reconnects fail this many times in a row, then the `RobustWebSocket` closes
+If reconnects fail this many times in a row, then the `SturdyWebSocket` closes
 permanently, providing the `CloseEvent` from the last failed reconnect attempt.
 
 #### `reconnectBackoffFactor`
@@ -184,11 +184,11 @@ A function which is called when the backing WebSocket closes to determine if a
 reconnect attempt should be made. It is provided the `CloseEvent` as an
 argument. For example:
 ```js
-const ws = new RobustWebSocket("wss://example.com", {
+const ws = new SturdyWebSocket("wss://example.com", {
     shouldReconnect: closeEvent => closeEvent.reason === "Harmless error"
 });
 ```
-If this returns false, then the `RobustWebSocket` is closed and `onclose` is
+If this returns false, then the `SturdyWebSocket` is closed and `onclose` is
 called with the latest `CloseEvent`.
 
 ### Additional Events
@@ -201,7 +201,7 @@ ws.addEventListener("reopen", () => console.log("We're back!"));
 
 #### `down`
 
-Called when the backing WebSocket is closed but `RobustWebSocket` will try to reconnect. Recieves the `CloseEvent` of the backing WebSocket.
+Called when the backing WebSocket is closed but `SturdyWebSocket` will try to reconnect. Recieves the `CloseEvent` of the backing WebSocket.
 
 #### `reopen`
 

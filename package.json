@@ -1,5 +1,5 @@
 {
-    "name": "robust-websocket",
+    "name": "sturdy-websocket",
     "version": "0.1.0",
     "description":
         "Tiny WebSocket wrapper that reconnects and resends failed messages.",
@@ -8,11 +8,11 @@
     "files": ["dist/"],
     "repository": {
         "type": "git",
-        "url": "git://github.com/dphilipson/robust-websocket.git"
+        "url": "git://github.com/dphilipson/sturdy-websocket.git"
     },
-    "homepage": "https://github.com/dphilipson/robust-websocket",
+    "homepage": "https://github.com/dphilipson/sturdy-websocket",
     "bugs": {
-        "url": "https://github.com/dphilipson/robust-websocket/issues",
+        "url": "https://github.com/dphilipson/sturdy-websocket/issues",
         "email": "david.philipson@gmail.com"
     },
     "author": "David Philipson <david.philipson@gmail.com> (http://dphil.me)",

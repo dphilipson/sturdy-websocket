@@ -25,7 +25,7 @@ type WebSocketListeners = {
     [key: string]: EventListenerOrEventListenerObject[];
 };
 
-export default class RobustWebSocket implements WebSocket {
+export default class SturdyWebSocket implements WebSocket {
     public static readonly DEFAULT_OPTIONS: AllOptions = {
         allClearResetTime: 5000,
         connectTimeout: 5000,
@@ -49,10 +49,10 @@ export default class RobustWebSocket implements WebSocket {
     public onopen: (event: Event) => void = noop;
     public ondown: (event: CloseEvent) => void = noop;
     public onreopen: (event: Event) => void = noop;
-    public readonly CONNECTING = RobustWebSocket.CONNECTING;
-    public readonly OPEN = RobustWebSocket.OPEN;
-    public readonly CLOSING = RobustWebSocket.CLOSING;
-    public readonly CLOSED = RobustWebSocket.CLOSED;
+    public readonly CONNECTING = SturdyWebSocket.CONNECTING;
+    public readonly OPEN = SturdyWebSocket.OPEN;
+    public readonly CLOSING = SturdyWebSocket.CLOSING;
+    public readonly CLOSED = SturdyWebSocket.CLOSED;
 
     private readonly protocols?: string | string[];
     private readonly options: AllOptions;
@@ -89,7 +89,7 @@ export default class RobustWebSocket implements WebSocket {
         } else {
             options = protocolsOrOptions;
         }
-        this.options = defaults({}, options, RobustWebSocket.DEFAULT_OPTIONS);
+        this.options = defaults({}, options, SturdyWebSocket.DEFAULT_OPTIONS);
         if (!this.options.constructor) {
             if (typeof WebSocket !== "undefined") {
                 this.options.constructor = WebSocket;
@@ -139,7 +139,7 @@ export default class RobustWebSocket implements WebSocket {
     }
 
     public get readyState(): number {
-        return this.isClosed ? RobustWebSocket.CLOSED : RobustWebSocket.OPEN;
+        return this.isClosed ? SturdyWebSocket.CLOSED : SturdyWebSocket.OPEN;
     }
 
     public close(code?: number, reason?: string): void {
