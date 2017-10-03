@@ -1,6 +1,6 @@
 {
     "name": "robust-websocket",
-    "version": "0.0.0",
+    "version": "0.1.0",
     "description":
         "Tiny WebSocket wrapper that reconnects and resends failed messages.",
     "main": "dist/index.js",
