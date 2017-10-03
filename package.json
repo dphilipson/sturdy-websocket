@@ -2,7 +2,7 @@
     "name": "robust-websocket",
     "version": "0.1.0",
     "description":
-        "Tiny WebSocket wrapper that reconnects and buffers missed messages.",
+        "Tiny WebSocket wrapper that reconnects and resends failed messages.",
     "main": "dist/index.js",
     "types": "dist/index",
     "files": ["dist/"],
@@ -47,7 +47,6 @@
         "@types/jest": "^21.1.1",
         "@types/lodash.defaults": "^4.2.3",
         "@types/ws": "^3.0.2",
-        "html5-websocket": "^2.0.1",
         "husky": "^0.14.3",
         "jest": "^21.2.1",
         "lint-staged": "^4.2.3",
@@ -60,6 +59,7 @@
         "ws": "^3.2.0"
     },
     "dependencies": {
-        "lodash.defaults": "^4.2.0"
+        "lodash.defaults": "^4.2.0",
+        "websocket": "^1.0.24"
     }
 }

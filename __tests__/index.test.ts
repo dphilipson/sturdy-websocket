@@ -1,6 +1,4 @@
-import Html5WebSocket = require("html5-websocket");
-(global as any).WebSocket = Html5WebSocket;
-
+import { w3cwebsocket } from "websocket";
 import { Server } from "ws";
 import RobustWebSocket from "../src/index";
 
@@ -24,7 +22,7 @@ describe("basic functionality", () => {
     it("should make a connection like a normal WebSocket", done => {
         setupEchoServer();
         ws = new RobustWebSocket(URL, undefined, {
-            constructor: Html5WebSocket,
+            constructor: w3cwebsocket,
         });
         const ondown = jest.fn();
         const onreopen = jest.fn();
@@ -57,7 +55,7 @@ describe("basic functionality", () => {
             }
         });
         ws = new RobustWebSocket(URL, undefined, {
-            constructor: Html5WebSocket,
+            constructor: w3cwebsocket,
         });
         const ondown = jest.fn();
         const onreopen = jest.fn();
@@ -75,24 +73,75 @@ describe("basic functionality", () => {
         };
     });
 
+    it("should not reconnect if shouldReconnect returns false", done => {
+        let connectCount = 0;
+        server.on("connection", connection => {
+            connectCount++;
+            connection.close(
+                1000,
+                connectCount < 3 ? "Minor error" : "Grievous error",
+            );
+        });
+        ws = new RobustWebSocket(URL, undefined, {
+            constructor: w3cwebsocket,
+            minReconnectDelay: 10,
+            shouldReconnect: event => event.reason === "Minor error",
+        });
+        ws.onclose = event => {
+            expect(connectCount).toEqual(3);
+            expect(event.reason).toEqual("Grievous error");
+            done();
+        };
+    });
+
     it("should use the protocol argument", done => {
         server.on("connection", connection => {
             expect(connection.protocol).toEqual("some-protocol");
             done();
         });
-        ws = new RobustWebSocket(URL, "some-protocol");
+        ws = new RobustWebSocket(URL, "some-protocol", {
+            constructor: w3cwebsocket,
+        });
     });
 
     it("should work with event listeners", done => {
         setupEchoServer();
         ws = new RobustWebSocket(URL, undefined, {
-            constructor: Html5WebSocket,
+            constructor: w3cwebsocket,
         });
         ws.addEventListener("open", () => ws.send("Echo??"));
         ws.addEventListener("message", event => {
             expect(event.data).toEqual("Echo??");
             done();
         });
+    });
+
+    interface GlobalWithWebSocket extends NodeJS.Global {
+        WebSocket?: typeof WebSocket;
+    }
+
+    it("should default to the global WebSocket if no constructor option", () => {
+        const wsGlobal = global as GlobalWithWebSocket;
+        const oldGlobalWebSocket = wsGlobal.WebSocket;
+        wsGlobal.WebSocket = w3cwebsocket;
+        try {
+            ws = new RobustWebSocket(URL);
+        } finally {
+            wsGlobal.WebSocket = oldGlobalWebSocket;
+        }
+    });
+
+    it("should fail if no global WebSocket and no constructor option", () => {
+        // This test is mainly just to be sure that the previous test is
+        // actually doing something.
+        const wsGlobal = global as GlobalWithWebSocket;
+        const oldGlobalWebSocket = wsGlobal.WebSocket;
+        wsGlobal.WebSocket = undefined;
+        try {
+            expect(() => (ws = new RobustWebSocket(URL))).toThrow(/global/);
+        } finally {
+            wsGlobal.WebSocket = oldGlobalWebSocket;
+        }
     });
 });
 
@@ -121,7 +170,7 @@ describe("retry backoff", () => {
             connection.close();
         });
         ws = new RobustWebSocket(URL, undefined, {
-            constructor: Html5WebSocket,
+            constructor: w3cwebsocket,
             minReconnectDelay: 1,
             maxReconnectDelay: 9,
             maxReconnectAttempts: 7,
@@ -142,22 +191,25 @@ describe("retry backoff", () => {
 });
 
 describe("buffering", () => {
-    it("should send stored messages after reconnecting", () => {
-        const wsMock: any = { send: jest.fn(), close: jest.fn() };
-        ws = new RobustWebSocket("", undefined, {
-            constructor: (() => wsMock) as any,
+    it("should send stored messages after reconnecting", done => {
+        // Shut down the server for a bit, then make sure the messages go
+        // through once it starts up again.
+        server.close();
+        setTimeout(() => {
+            server = new Server({ port: PORT });
+            server.on("connection", connection =>
+                connection.on("message", message => {
+                    expect(message).toEqual("Finally");
+                    done();
+                }),
+            );
+        }, 20);
+
+        ws = new RobustWebSocket(URL, undefined, {
+            constructor: w3cwebsocket,
+            minReconnectDelay: 10,
         });
-        wsMock.readyState = WebSocket.OPEN;
-        wsMock.onopen();
-        wsMock.readyState = WebSocket.CLOSED;
-        wsMock.onclose();
-        ws.send("Hello");
-        ws.send("World");
-        expect(wsMock.send).not.toHaveBeenCalled();
-        wsMock.readyState = WebSocket.OPEN;
-        wsMock.onopen();
-        const sendCalls = wsMock.send.mock.calls.map((call: any) => call[0]);
-        expect(sendCalls).toEqual(["Hello", "World"]);
+        ws.send("Finally");
     });
 });
 
