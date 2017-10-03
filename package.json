@@ -34,7 +34,7 @@
         "transform": {
             ".(ts|tsx)": "<rootDir>/node_modules/ts-jest/preprocessor.js"
         },
-        "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$",
+        "testRegex": "(/__tests__/.*\\.(test|spec))\\.(ts|tsx|js)$",
         "moduleFileExtensions": ["ts", "tsx", "js"],
         "mapCoverage": true
     },
@@ -46,6 +46,8 @@
     "devDependencies": {
         "@types/jest": "^21.1.1",
         "@types/lodash.defaults": "^4.2.3",
+        "@types/ws": "^3.0.2",
+        "html5-websocket": "^2.0.1",
         "husky": "^0.14.3",
         "jest": "^21.2.1",
         "lint-staged": "^4.2.3",
@@ -54,7 +56,8 @@
         "prettier": "^1.7.3",
         "ts-jest": "^21.0.1",
         "tslint": "^5.7.0",
-        "typescript": "^2.5.3"
+        "typescript": "^2.5.3",
+        "ws": "^3.2.0"
     },
     "dependencies": {
         "lodash.defaults": "^4.2.0"

@@ -3,12 +3,13 @@ import defaults = require("lodash.defaults");
 export interface AllOptions {
     allClearResetTime: number;
     connectTimeout: number;
+    constructor: new (url: string, protocols?: string | string[]) => WebSocket;
     debug: boolean;
     minReconnectDelay: number;
     maxReconnectDelay: number;
+    maxReconnectAttempts: number;
     reconnectBackoffFactor: number;
     shouldReconnect(closeEvent: CloseEvent): boolean;
-    wsFactory(url: string, protocols?: string | string[]): WebSocket;
 }
 
 export type Options = Partial<AllOptions>;
@@ -19,7 +20,7 @@ type WebSocketListener<K extends keyof WebSocketEventMap> = (
 ) => any;
 
 type WebSocketListeners = {
-    [K in keyof WebSocketEventMap]: Array<WebSocketListener<K>>
+    [K in keyof WebSocketEventMap]?: Array<WebSocketListener<K>>
 } & {
     [key: string]: EventListenerOrEventListenerObject[];
 };
@@ -28,47 +29,57 @@ export default class RobustWebsocket implements WebSocket {
     public static readonly DEFAULT_OPTIONS: AllOptions = {
         allClearResetTime: 30000,
         connectTimeout: 4000,
+        constructor: typeof WebSocket && WebSocket,
         debug: false,
         minReconnectDelay: 1000,
         maxReconnectDelay: 30000,
+        maxReconnectAttempts: Number.POSITIVE_INFINITY,
         reconnectBackoffFactor: 1.5,
         shouldReconnect: () => true,
-        wsFactory: (url: string, protocols?: string | string[]) =>
-            new WebSocket(url, protocols),
     };
 
-    public onclose: (event: CloseEvent) => any = noop;
-    public onerror: (event: Event) => any = noop;
-    public onmessage: (event: MessageEvent) => any = noop;
-    public onopen: (event: Event) => any = noop;
-    public readonly CLOSED = WebSocket.CLOSED;
-    public readonly CLOSING = WebSocket.CLOSING;
-    public readonly CONNECTING = WebSocket.CONNECTING;
-    public readonly OPEN = WebSocket.OPEN;
+    public static readonly CONNECTING = 0;
+    public static readonly OPEN = 1;
+    public static readonly CLOSING = 2;
+    public static readonly CLOSED = 3;
+
+    public onclose: (event: CloseEvent) => void = noop;
+    public onerror: (event: Event) => void = noop;
+    public onmessage: (event: MessageEvent) => void = noop;
+    public onopen: (event: Event) => void = noop;
+    public ondown: (event: CloseEvent) => void = noop;
+    public onreopen: (event: Event) => void = noop;
+    public readonly CONNECTING = RobustWebsocket.CONNECTING;
+    public readonly OPEN = RobustWebsocket.OPEN;
+    public readonly CLOSING = RobustWebsocket.CLOSING;
+    public readonly CLOSED = RobustWebsocket.CLOSED;
 
     private readonly options: AllOptions;
     private ws?: WebSocket;
+    private hasBeenOpened = false;
     private isClosed = false;
-    private messageBuffer: any[];
+    private messageBuffer: any[] = [];
     private nextRetryTime: number = 0;
-    private allClearTimeoutId?: number;
-    private connectTimeoutId?: number;
+    private reconnectCount = 0;
+    private allClearTimeoutId?: any;
+    private connectTimeoutId?: any;
     private _binaryType = "blob";
     private lastKnownExtensions = "";
     private lastKnownProtocol = "";
-    private readonly listeners: WebSocketListeners = {
-        close: [],
-        error: [],
-        message: [],
-        open: [],
-    };
+    private readonly listeners: WebSocketListeners = {};
 
     constructor(
-        private readonly _url: string,
+        public readonly url: string,
         private readonly protocols?: string | string[],
         options?: Options,
     ) {
         this.options = defaults({}, options, RobustWebsocket.DEFAULT_OPTIONS);
+        if (!this.options.constructor) {
+            throw new Error(
+                "WebSocket not present in global scope and no constructor" +
+                    " option was provided.",
+            );
+        }
         this.openNewWebSocket();
     }
 
@@ -111,10 +122,6 @@ export default class RobustWebsocket implements WebSocket {
         return this.isClosed ? WebSocket.CLOSED : WebSocket.OPEN;
     }
 
-    public get url(): string {
-        return this._url;
-    }
-
     public close(code?: number, reason?: string): void {
         if (this.ws) {
             this.ws.close(code, reason);
@@ -124,7 +131,7 @@ export default class RobustWebsocket implements WebSocket {
     }
 
     public send(data: any): void {
-        if (this.ws) {
+        if (this.ws && this.ws.readyState === this.OPEN) {
             this.ws.send(data);
         } else {
             this.messageBuffer.push(data);
@@ -146,25 +153,7 @@ export default class RobustWebsocket implements WebSocket {
     }
 
     public dispatchEvent(event: Event): boolean {
-        switch (event.type) {
-            case "close":
-                this.onclose(event as any);
-                break;
-            case "error":
-                this.onerror(event);
-                break;
-            case "message":
-                this.onmessage(event as any);
-                break;
-            case "open":
-                this.onopen(event);
-        }
-        if (event.type in this.listeners) {
-            this.listeners[event.type]
-                .slice()
-                .forEach(listener => this.callListener(listener, event));
-        }
-        return false;
+        return this.dispatchEventOfType(event.type, event);
     }
 
     public removeEventListener(
@@ -182,9 +171,9 @@ export default class RobustWebsocket implements WebSocket {
         if (this.isClosed) {
             return;
         }
-        const { connectTimeout, wsFactory } = this.options;
-        this.debugLog(`Opening new WebSocket to ${this._url}.`);
-        const ws = wsFactory(this._url, this.protocols);
+        const { connectTimeout, constructor } = this.options;
+        this.debugLog(`Opening new WebSocket to ${this.url}.`);
+        const ws = new constructor(this.url, this.protocols);
         ws.onclose = event => this.handleClose(event);
         ws.onerror = event => this.handleError(event);
         ws.onmessage = event => this.handleMessage(event);
@@ -206,16 +195,22 @@ export default class RobustWebsocket implements WebSocket {
         this.ws = ws;
         ws.binaryType = this._binaryType;
         this.clearConnectTimeout();
-        this.dispatchEvent(event);
+        if (this.hasBeenOpened) {
+            this.dispatchEventOfType("reopen", event);
+        } else {
+            this.dispatchEventOfType("open", event);
+            this.hasBeenOpened = true;
+        }
         this.messageBuffer.forEach(message => this.send(message));
         this.messageBuffer = [];
         this.allClearTimeoutId = setTimeout(() => {
             this.clearAllClearTimeout();
             this.nextRetryTime = 0;
+            this.reconnectCount = 0;
             const openTime = (allClearResetTime / 1000) | 0;
             this.debugLog(
                 `WebSocket remained open for ${openTime} seconds. Resetting` +
-                    " retry time.",
+                    " retry time and count.",
             );
         }, allClearResetTime);
     }
@@ -224,28 +219,36 @@ export default class RobustWebsocket implements WebSocket {
         if (this.isClosed) {
             return;
         }
-        this.dispatchEvent(event);
+        this.dispatchEventOfType("message", event);
     }
 
     private handleClose(event: CloseEvent): void {
-        if (!this.ws || this.isClosed) {
+        if (this.isClosed) {
             return;
         }
+        const { maxReconnectAttempts, shouldReconnect } = this.options;
         this.clearConnectTimeout();
         this.clearAllClearTimeout();
-        this.lastKnownExtensions = this.ws.extensions;
-        this.lastKnownProtocol = this.ws.protocol;
-        this.ws = undefined;
-        if (this.options.shouldReconnect(event)) {
+        if (this.ws) {
+            this.lastKnownExtensions = this.ws.extensions;
+            this.lastKnownProtocol = this.ws.protocol;
+            this.ws = undefined;
+        }
+        if (
+            this.reconnectCount < maxReconnectAttempts &&
+            shouldReconnect(event)
+        ) {
+            this.reconnectCount++;
             this.reconnect();
+            this.dispatchEventOfType("down", event);
         } else {
             this.shutdown();
-            this.dispatchEvent(event);
+            this.dispatchEventOfType("close", event);
         }
     }
 
     private handleError(event: Event): void {
-        this.dispatchEvent(event);
+        this.dispatchEventOfType("error", event);
         this.debugLog("WebSocket encountered an error.");
     }
 
@@ -293,6 +296,37 @@ export default class RobustWebsocket implements WebSocket {
             clearTimeout(this.allClearTimeoutId);
             this.allClearTimeoutId = undefined;
         }
+    }
+
+    // This method is to support html5-websocket on Node, where the callbacks
+    // don't receive real events.
+    private dispatchEventOfType(type: string, event: any): boolean {
+        switch (type) {
+            case "close":
+                this.onclose(event);
+                break;
+            case "error":
+                this.onerror(event);
+                break;
+            case "message":
+                this.onmessage(event);
+                break;
+            case "open":
+                this.onopen(event);
+                break;
+            case "down":
+                this.ondown(event);
+                break;
+            case "reopen":
+                this.onreopen(event);
+                break;
+        }
+        if (type in this.listeners) {
+            this.listeners[type]
+                .slice()
+                .forEach(listener => this.callListener(listener, event));
+        }
+        return !event || !(event as Event).defaultPrevented;
     }
 
     private callListener(
