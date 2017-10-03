@@ -5,11 +5,26 @@ Tiny WebSocket wrapper that reconnects and resends failed messages.
 [![Build
 Status](https://travis-ci.org/dphilipson/sturdy-websocket.svg?branch=master)](https://travis-ci.org/dphilipson/sturdy-websocket)
 
+## Introduction
+
+Sturdy WebSocket is a small (< 4kb gzipped) wrapper around a WebSocket that
+reconnects when the WebSocket closes. If `send()` is called while the WebSocket
+is closed, then the messages are stored in a buffer and sent once the connection
+is reestablished.
+
+`SturdyWebSocket` fully implements the WebSocket API, as described [by
+MDN](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket), including the
+ready state constants, the `EventTarget` interface, and properties that you probably
+don't care about like `bufferedAmount`. This means that it can be used as a
+drop-in replacement for `WebSocket` with any existing code or other libraries
+that consume WebSockets. **To the surrounding code, `SturdyWebSocket` looks
+exactly like a regular `WebSocket` that never goes down, even in the presence of
+network failures.**
+
 ## Table of Contents
 
 <!-- toc -->
 
-- [Introduction](#introduction)
 - [Usage](#usage)
 - [Installation](#installation)
 - [Full API](#full-api)
@@ -29,23 +44,8 @@ Status](https://travis-ci.org/dphilipson/sturdy-websocket.svg?branch=master)](ht
 
 <!-- tocstop -->
 
-## Introduction
-
-Sturdy WebSocket is a small (< 4kb gzipped) wrapper around a WebSocket that
-reconnects when the WebSocket closes. If `send()` is called while the WebSocket
-is closed, then the messages are stored in a buffer and sent once the connection
-is reestablished.
-
 ## Usage
 
-`SturdyWebSocket` fully implements the WebSocket API, as described [by
-MDN](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket), including the
-ready state constants, `EventTarget` interface, and properties that you probably
-don't care about like `bufferedAmount`. This means that it can be used as a
-drop-in replacement for `WebSocket` with any existing code or other libraries
-that consume WebSockets.
-
-Example:
 ```js
 import SturdyWebSocket from "sturdy-websocket";
 
@@ -56,7 +56,7 @@ ws.onmessage = event => console.log("I got a message that says " + event.data);
 ws.addEventListener("message", event =>
     console.log("I already said this, but the message says " + event.data));
 
-// Like the normal constructor, the protocol can be given as a second argument.
+// Like with normal WebSockets, the protocol can be given as a second argument.
 const wsWithProtocol = new SturdyWebSocket("wss://foo.com", "some-protocol");
 
 // Options can be provided as the final argument.
@@ -88,7 +88,7 @@ yarn add sturdy-websocket
 
 With NPM:
 ```
-npm add --save sturdy-websocket
+npm install --save sturdy-websocket
 ```
 
 ## Full API
@@ -193,7 +193,8 @@ called with the latest `CloseEvent`.
 
 ### Additional Events
 
-These events, like all the standard WebSocket events, can be observed in two ways:
+These events, like all the standard WebSocket events, can be observed in two
+ways:
 ```js
 ws.onreopen = () => console.log("We're back!");
 ws.addEventListener("reopen", () => console.log("We're back!"));
@@ -201,7 +202,8 @@ ws.addEventListener("reopen", () => console.log("We're back!"));
 
 #### `down`
 
-Called when the backing WebSocket is closed but `SturdyWebSocket` will try to reconnect. Recieves the `CloseEvent` of the backing WebSocket.
+Called when the backing WebSocket is closed but `SturdyWebSocket` will try to
+reconnect. Recieves the `CloseEvent` of the backing WebSocket.
 
 #### `reopen`
 
