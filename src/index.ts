@@ -3,12 +3,15 @@ import defaults = require("lodash.defaults");
 export interface AllOptions {
     allClearResetTime: number;
     connectTimeout: number;
-    constructor: new (url: string, protocols?: string | string[]) => WebSocket;
     debug: boolean;
     minReconnectDelay: number;
     maxReconnectDelay: number;
     maxReconnectAttempts: number;
     reconnectBackoffFactor: number;
+    wsConstructor: new (
+        url: string,
+        protocols?: string | string[],
+    ) => WebSocket;
     shouldReconnect(closeEvent: CloseEvent): boolean;
 }
 
@@ -29,13 +32,13 @@ export default class SturdyWebSocket implements WebSocket {
     public static readonly DEFAULT_OPTIONS: AllOptions = {
         allClearResetTime: 5000,
         connectTimeout: 5000,
-        constructor: undefined!,
         debug: false,
         minReconnectDelay: 1000,
         maxReconnectDelay: 30000,
         maxReconnectAttempts: Number.POSITIVE_INFINITY,
         reconnectBackoffFactor: 1.5,
         shouldReconnect: () => true,
+        wsConstructor: undefined!,
     };
 
     public static readonly CONNECTING = 0;
@@ -90,12 +93,12 @@ export default class SturdyWebSocket implements WebSocket {
             options = protocolsOrOptions;
         }
         this.options = defaults({}, options, SturdyWebSocket.DEFAULT_OPTIONS);
-        if (!this.options.constructor) {
+        if (!this.options.wsConstructor) {
             if (typeof WebSocket !== "undefined") {
-                this.options.constructor = WebSocket;
+                this.options.wsConstructor = WebSocket;
             } else {
                 throw new Error(
-                    "WebSocket not present in global scope and no constructor" +
+                    "WebSocket not present in global scope and no wsConstructor" +
                         " option was provided.",
                 );
             }
@@ -195,9 +198,9 @@ export default class SturdyWebSocket implements WebSocket {
         if (this.isClosed) {
             return;
         }
-        const { connectTimeout, constructor } = this.options;
+        const { connectTimeout, wsConstructor } = this.options;
         this.debugLog(`Opening new WebSocket to ${this.url}.`);
-        const ws = new constructor(this.url, this.protocols);
+        const ws = new wsConstructor(this.url, this.protocols);
         ws.onclose = event => this.handleClose(event);
         ws.onerror = event => this.handleError(event);
         ws.onmessage = event => this.handleMessage(event);

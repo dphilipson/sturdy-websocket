@@ -14,12 +14,12 @@ is reestablished.
 
 `SturdyWebSocket` fully implements the WebSocket API, as described [by
 MDN](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket), including the
-ready state constants, the `EventTarget` interface, and properties that you probably
-don't care about like `bufferedAmount`. This means that it can be used as a
-drop-in replacement for `WebSocket` with any existing code or other libraries
-that consume WebSockets. **To the surrounding code, `SturdyWebSocket` looks
-exactly like a regular `WebSocket` that never goes down, even in the presence of
-network failures.**
+ready state constants, the `EventTarget` interface, and properties that you
+probably don't care about like `bufferedAmount`. This means that it can be used
+as a drop-in replacement for `WebSocket` with any existing code or other
+libraries that consume WebSockets. **To the surrounding code, `SturdyWebSocket`
+looks exactly like a regular `WebSocket` that never goes down, even in the
+presence of network failures.**
 
 ## Table of Contents
 
@@ -31,13 +31,13 @@ network failures.**
   * [Options](#options)
     + [`allClearResetTime`](#allclearresettime)
     + [`connectTimeout`](#connecttimeout)
-    + [`constructor`](#constructor)
     + [`debug`](#debug)
     + [`minReconnectDelay`](#minreconnectdelay)
     + [`maxReconnectDelay`](#maxreconnectdelay)
     + [`maxReconnectAttempts`](#maxreconnectattempts)
     + [`reconnectBackoffFactor`](#reconnectbackofffactor)
     + [`shouldReconnect`](#shouldreconnect)
+    + [`wsConstructor`](#wsconstructor)
   * [Additional Events](#additional-events)
     + [`down`](#down)
     + [`reopen`](#reopen)
@@ -129,16 +129,6 @@ When attempting to open a new connection, how long to wait before giving up and
 making a new connection. Note that it is possible for an attempt to open a
 WebSocket to stall forever, which is why this option is needed.
 
-#### `constructor`
-
-Default: `WebSocket`
-
-Can be used to specify an implementation for the underlying WebSockets other
-than the default. This may be useful in environments where `WebSocket` is not
-available as a global variable, such as Node.js.
-
-If this option is not provided and there is no variable named `WebSocket` in the
-global scope, then the `SturdyWebSocket` constructor will throw.
 
 #### `debug`
 
@@ -190,6 +180,18 @@ const ws = new SturdyWebSocket("wss://example.com", {
 ```
 If this returns false, then the `SturdyWebSocket` is closed and `onclose` is
 called with the latest `CloseEvent`.
+
+#### `wsConstructor`
+
+Default: `WebSocket`
+
+Constructor used for creating WebSocketes internally. Can be used to specify an
+implementation for the underlying WebSockets other than the default. This may be
+useful in environments where `WebSocket` is not available as a global variable,
+such as Node.js.
+
+If this option is not provided and there is no variable named `WebSocket` in the
+global scope, then the `SturdyWebSocket` constructor will throw.
 
 ### Additional Events
 

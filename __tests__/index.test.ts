@@ -21,7 +21,7 @@ afterEach(() => {
 describe("basic functionality", () => {
     it("should make a connection like a normal WebSocket", done => {
         setupEchoServer();
-        ws = new SturdyWebSocket(URL, { constructor: w3cwebsocket });
+        ws = new SturdyWebSocket(URL, { wsConstructor: w3cwebsocket });
         const ondown = jest.fn();
         const onreopen = jest.fn();
         const onclose = jest.fn();
@@ -52,7 +52,7 @@ describe("basic functionality", () => {
                     fail("More connections made than expected.");
             }
         });
-        ws = new SturdyWebSocket(URL, { constructor: w3cwebsocket });
+        ws = new SturdyWebSocket(URL, { wsConstructor: w3cwebsocket });
         const ondown = jest.fn();
         const onreopen = jest.fn();
         const onclose = jest.fn();
@@ -79,7 +79,7 @@ describe("basic functionality", () => {
             );
         });
         ws = new SturdyWebSocket(URL, {
-            constructor: w3cwebsocket,
+            wsConstructor: w3cwebsocket,
             minReconnectDelay: 10,
             shouldReconnect: event => event.reason === "Minor error",
         });
@@ -96,13 +96,13 @@ describe("basic functionality", () => {
             done();
         });
         ws = new SturdyWebSocket(URL, "some-protocol", {
-            constructor: w3cwebsocket,
+            wsConstructor: w3cwebsocket,
         });
     });
 
     it("should work with event listeners", done => {
         setupEchoServer();
-        ws = new SturdyWebSocket(URL, { constructor: w3cwebsocket });
+        ws = new SturdyWebSocket(URL, { wsConstructor: w3cwebsocket });
         ws.addEventListener("open", () => ws.send("Echo??"));
         ws.addEventListener("message", event => {
             expect(event.data).toEqual("Echo??");
@@ -114,7 +114,7 @@ describe("basic functionality", () => {
         WebSocket?: typeof WebSocket;
     }
 
-    it("should default to the global WebSocket if no constructor option", () => {
+    it("should default to global WebSocket if no wsConstructor option", () => {
         const wsGlobal = global as GlobalWithWebSocket;
         const oldGlobalWebSocket = wsGlobal.WebSocket;
         wsGlobal.WebSocket = w3cwebsocket;
@@ -125,7 +125,7 @@ describe("basic functionality", () => {
         }
     });
 
-    it("should fail if no global WebSocket and no constructor option", () => {
+    it("should fail if no global WebSocket and no wsConstructor option", () => {
         // This test is mainly just to be sure that the previous test is
         // actually doing something.
         const wsGlobal = global as GlobalWithWebSocket;
@@ -164,7 +164,7 @@ describe("retry backoff", () => {
             connection.close();
         });
         ws = new SturdyWebSocket(URL, {
-            constructor: w3cwebsocket,
+            wsConstructor: w3cwebsocket,
             minReconnectDelay: 1,
             maxReconnectDelay: 9,
             maxReconnectAttempts: 7,
@@ -200,7 +200,7 @@ describe("buffering", () => {
         }, 20);
 
         ws = new SturdyWebSocket(URL, {
-            constructor: w3cwebsocket,
+            wsConstructor: w3cwebsocket,
             minReconnectDelay: 10,
         });
         ws.send("Finally");
@@ -219,7 +219,7 @@ describe("connect timeout", () => {
         const constructorMock = jest.fn(() => wsMock);
         ws = new SturdyWebSocket("", {
             connectTimeout: 100,
-            constructor: constructorMock,
+            wsConstructor: constructorMock,
         });
         expect(wsMock.close).not.toHaveBeenCalled();
         expect(constructorMock).toHaveBeenCalledTimes(1);
