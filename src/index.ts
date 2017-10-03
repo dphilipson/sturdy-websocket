@@ -115,19 +115,23 @@ export default class SturdyWebSocket implements WebSocket {
     }
 
     public get bufferedAmount(): number {
-        let sum = 0;
+        let sum = this.ws ? this.ws.bufferedAmount : 0;
+        let hasUnknownAmount = false;
         this.messageBuffer.forEach(data => {
             const byteLength = getDataByteLength(data);
             if (byteLength != null) {
                 sum += byteLength;
             } else {
-                this.debugLog(
-                    "Some buffered data had unknown length. bufferedAmount()" +
-                        " return value may be below the correct amount.",
-                );
+                hasUnknownAmount = true;
             }
         });
-        return undefined!;
+        if (hasUnknownAmount) {
+            this.debugLog(
+                "Some buffered data had unknown length. bufferedAmount()" +
+                    " return value may be below the correct amount.",
+            );
+        }
+        return sum;
     }
 
     public get extensions(): string {
