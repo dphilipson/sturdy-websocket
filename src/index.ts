@@ -27,8 +27,8 @@ type WebSocketListeners = {
 
 export default class RobustWebSocket implements WebSocket {
     public static readonly DEFAULT_OPTIONS: AllOptions = {
-        allClearResetTime: 30000,
-        connectTimeout: 4000,
+        allClearResetTime: 5000,
+        connectTimeout: 5000,
         constructor: undefined!,
         debug: false,
         minReconnectDelay: 1000,
@@ -327,8 +327,6 @@ export default class RobustWebSocket implements WebSocket {
         }
     }
 
-    // This method is to support html5-websocket on Node, where the callbacks
-    // don't receive real events.
     private dispatchEventOfType(type: string, event: any): boolean {
         switch (type) {
             case "close":
