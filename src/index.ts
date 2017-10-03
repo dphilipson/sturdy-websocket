@@ -54,6 +54,7 @@ export default class RobustWebSocket implements WebSocket {
     public readonly CLOSING = RobustWebSocket.CLOSING;
     public readonly CLOSED = RobustWebSocket.CLOSED;
 
+    private readonly protocols?: string | string[];
     private readonly options: AllOptions;
     private ws?: WebSocket;
     private hasBeenOpened = false;
@@ -68,11 +69,26 @@ export default class RobustWebSocket implements WebSocket {
     private lastKnownProtocol = "";
     private readonly listeners: WebSocketListeners = {};
 
+    constructor(url: string, options?: Options);
+    constructor(
+        url: string,
+        protocols: string | string[] | undefined,
+        options?: Options,
+    );
     constructor(
         public readonly url: string,
-        private readonly protocols?: string | string[],
+        protocolsOrOptions?: string | string[] | Options,
         options?: Options,
     ) {
+        if (
+            protocolsOrOptions == null ||
+            typeof protocolsOrOptions === "string" ||
+            Array.isArray(protocolsOrOptions)
+        ) {
+            this.protocols = protocolsOrOptions;
+        } else {
+            options = protocolsOrOptions;
+        }
         this.options = defaults({}, options, RobustWebSocket.DEFAULT_OPTIONS);
         if (!this.options.constructor) {
             if (typeof WebSocket !== "undefined") {

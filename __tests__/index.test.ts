@@ -21,9 +21,7 @@ afterEach(() => {
 describe("basic functionality", () => {
     it("should make a connection like a normal WebSocket", done => {
         setupEchoServer();
-        ws = new RobustWebSocket(URL, undefined, {
-            constructor: w3cwebsocket,
-        });
+        ws = new RobustWebSocket(URL, { constructor: w3cwebsocket });
         const ondown = jest.fn();
         const onreopen = jest.fn();
         const onclose = jest.fn();
@@ -54,9 +52,7 @@ describe("basic functionality", () => {
                     fail("More connections made than expected.");
             }
         });
-        ws = new RobustWebSocket(URL, undefined, {
-            constructor: w3cwebsocket,
-        });
+        ws = new RobustWebSocket(URL, { constructor: w3cwebsocket });
         const ondown = jest.fn();
         const onreopen = jest.fn();
         const onclose = jest.fn();
@@ -82,7 +78,7 @@ describe("basic functionality", () => {
                 connectCount < 3 ? "Minor error" : "Grievous error",
             );
         });
-        ws = new RobustWebSocket(URL, undefined, {
+        ws = new RobustWebSocket(URL, {
             constructor: w3cwebsocket,
             minReconnectDelay: 10,
             shouldReconnect: event => event.reason === "Minor error",
@@ -106,9 +102,7 @@ describe("basic functionality", () => {
 
     it("should work with event listeners", done => {
         setupEchoServer();
-        ws = new RobustWebSocket(URL, undefined, {
-            constructor: w3cwebsocket,
-        });
+        ws = new RobustWebSocket(URL, { constructor: w3cwebsocket });
         ws.addEventListener("open", () => ws.send("Echo??"));
         ws.addEventListener("message", event => {
             expect(event.data).toEqual("Echo??");
@@ -169,7 +163,7 @@ describe("retry backoff", () => {
         server.on("connection", connection => {
             connection.close();
         });
-        ws = new RobustWebSocket(URL, undefined, {
+        ws = new RobustWebSocket(URL, {
             constructor: w3cwebsocket,
             minReconnectDelay: 1,
             maxReconnectDelay: 9,
@@ -205,7 +199,7 @@ describe("buffering", () => {
             );
         }, 20);
 
-        ws = new RobustWebSocket(URL, undefined, {
+        ws = new RobustWebSocket(URL, {
             constructor: w3cwebsocket,
             minReconnectDelay: 10,
         });
@@ -223,7 +217,7 @@ describe("connect timeout", () => {
             close: jest.fn(() => wsMock.onclose()),
         };
         const constructorMock = jest.fn(() => wsMock);
-        ws = new RobustWebSocket("", undefined, {
+        ws = new RobustWebSocket("", {
             connectTimeout: 100,
             constructor: constructorMock,
         });
