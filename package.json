@@ -45,7 +45,6 @@
     },
     "devDependencies": {
         "@types/jest": "^21.1.1",
-        "@types/lodash.defaults": "^4.2.3",
         "@types/ws": "^3.0.2",
         "husky": "^0.14.3",
         "jest": "^21.2.1",
@@ -59,7 +58,5 @@
         "websocket": "^1.0.24",
         "ws": "^3.2.0"
     },
-    "dependencies": {
-        "lodash.defaults": "^4.2.0"
-    }
+    "dependencies": {}
 }

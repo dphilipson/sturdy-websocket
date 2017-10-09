@@ -1,5 +1,3 @@
-import defaults = require("lodash.defaults");
-
 export interface AllOptions {
     allClearResetTime: number;
     connectTimeout: number;
@@ -92,7 +90,7 @@ export default class SturdyWebSocket implements WebSocket {
         } else {
             options = protocolsOrOptions;
         }
-        this.options = defaults({}, options, SturdyWebSocket.DEFAULT_OPTIONS);
+        this.options = { ...SturdyWebSocket.DEFAULT_OPTIONS, ...options };
         if (!this.options.wsConstructor) {
             if (typeof WebSocket !== "undefined") {
                 this.options.wsConstructor = WebSocket;
