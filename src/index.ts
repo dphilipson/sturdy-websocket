@@ -265,18 +265,18 @@ export default class SturdyWebSocket implements WebSocket {
             this.lastKnownProtocol = this.ws.protocol;
             this.ws = undefined;
         }
-        const attemptLimitReached = this.reconnectCount < maxReconnectAttempts;
-        if (attemptLimitReached && shouldReconnect(event)) {
+        const hasMoreAttempts = this.reconnectCount < maxReconnectAttempts;
+        if (hasMoreAttempts && shouldReconnect(event)) {
             this.reconnectCount++;
             this.reconnect();
             this.dispatchEventOfType("down", event);
         } else {
             this.debugLog(
-                attemptLimitReached
-                    ? `Failed to reconnect after ${maxReconnectAttempts}` +
-                      " attempts. Closing permanently."
-                    : "Provided shouldReconnect() returned false." +
-                      " Closing permanently.",
+                hasMoreAttempts
+                    ? "Provided shouldReconnect() returned false." +
+                      " Closing permanently."
+                    : `Failed to reconnect after ${maxReconnectAttempts}` +
+                      " attempts. Closing permanently.",
             );
             this.shutdown();
             this.dispatchEventOfType("close", event);
