@@ -44,20 +44,21 @@
         "*.md": ["generate-toc", "git add"]
     },
     "devDependencies": {
-        "@types/jest": "^21.1.1",
+        "@types/jest": "^22.1.2",
         "@types/lodash.defaults": "^4.2.3",
-        "@types/ws": "^3.0.2",
+        "@types/ws": "^4.0.1",
         "husky": "^0.14.3",
-        "jest": "^21.2.1",
-        "lint-staged": "^4.2.3",
+        "jest": "^22.3.0",
+        "lint-staged": "^6.1.0",
         "markdown-toc": "^1.2.0",
-        "npm-run-all": "^4.1.1",
-        "prettier": "^1.7.3",
-        "ts-jest": "^21.0.1",
-        "tslint": "^5.7.0",
-        "typescript": "^2.5.3",
-        "websocket": "^1.0.24",
-        "ws": "^3.2.0"
+        "npm-run-all": "^4.1.2",
+        "prettier": "^1.10.2",
+        "ts-jest": "^22.0.4",
+        "tslint": "^5.9.1",
+        "tslint-config-prettier": "^1.7.0",
+        "typescript": "^2.7.1",
+        "websocket": "^1.0.25",
+        "ws": "^4.0.0"
     },
     "dependencies": {
         "lodash.defaults": "^4.2.0"

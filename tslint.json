@@ -1,17 +1,10 @@
 {
-    "extends": ["tslint:recommended"],
+    "extends": ["tslint:recommended", "tslint-config-prettier"],
     "rules": {
-        "arrow-parens": [true, "ban-single-arg-parens"],
         "interface-name": [true, "never-prefix"],
-        "max-classes-per-file": [false],
+        "max-classes-per-file": false,
         "no-bitwise": false,
-        "object-literal-sort-keys": false,
-        "semicolon": [true, "always", "ignore-bound-class-methods"],
-        "variable-name": [
-            true,
-            "ban-keywords",
-            "check-format",
-            "allow-leading-underscore"
-        ]
+        "no-this-assignment": [true, { "allow-destructuring": true }],
+        "object-literal-sort-keys": false
     }
 }
