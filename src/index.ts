@@ -67,7 +67,7 @@ export default class SturdyWebSocket implements WebSocket {
     private reconnectCount = 0;
     private allClearTimeoutId?: any;
     private connectTimeoutId?: any;
-    private binaryTypeInternal?: string;
+    private binaryTypeInternal?: BinaryType;
     private lastKnownExtensions = "";
     private lastKnownProtocol = "";
     private readonly listeners: WebSocketListeners = {};
@@ -106,11 +106,11 @@ export default class SturdyWebSocket implements WebSocket {
         this.openNewWebSocket();
     }
 
-    public get binaryType(): string {
+    public get binaryType(): BinaryType {
         return this.binaryTypeInternal || "blob";
     }
 
-    public set binaryType(binaryType: string) {
+    public set binaryType(binaryType: BinaryType) {
         this.binaryTypeInternal = binaryType;
         if (this.ws) {
             this.ws.binaryType = binaryType;
