@@ -12,7 +12,7 @@ export interface AllOptions {
         url: string,
         protocols?: string | string[],
     ) => WebSocket;
-    shouldReconnect(closeEvent: CloseEvent): boolean;
+    shouldReconnect(closeEvent: CloseEvent): boolean | Promise<boolean>;
 }
 
 export type Options = Partial<AllOptions>;
@@ -98,8 +98,8 @@ export default class SturdyWebSocket implements WebSocket {
                 this.options.wsConstructor = WebSocket;
             } else {
                 throw new Error(
-                    "WebSocket not present in global scope and no wsConstructor" +
-                        " option was provided.",
+                    "WebSocket not present in global scope and no " +
+                        "wsConstructor option was provided.",
                 );
             }
         }

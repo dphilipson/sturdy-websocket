@@ -90,6 +90,69 @@ describe("basic functionality", () => {
         };
     });
 
+    it("should not reconnect until shouldReconnect's promise resolves to true", async () => {
+        let connectCount = 0;
+        server.on("connection", connection => {
+            switch (connectCount++) {
+                case 0:
+                    connection.close();
+                    break;
+                case 1:
+                    connection.send("Success");
+                    break;
+                default:
+                    fail("More connections made than expected.");
+            }
+        });
+        let resolve: (b: boolean) => void = undefined!;
+        ws = new SturdyWebSocket(URL, {
+            wsConstructor: w3cwebsocket,
+            minReconnectDelay: 5,
+            shouldReconnect: () => new Promise(r => (resolve = r)),
+        });
+        const ondown = jest.fn();
+        const onreopen = jest.fn();
+        const onclose = jest.fn();
+        ws.ondown = ondown;
+        ws.onreopen = onreopen;
+        ws.onclose = onclose;
+        let onmessageCalled = false;
+        ws.onmessage = event => {
+            onmessageCalled = true;
+            expect(event.data).toEqual("Success");
+            expect(connectCount).toEqual(2);
+            expect(ondown).toHaveBeenCalledTimes(1);
+            expect(onreopen).toHaveBeenCalledTimes(1);
+            expect(onclose).not.toHaveBeenCalled();
+        };
+        await delay(10);
+        expect(ondown).toHaveBeenCalledTimes(1);
+        expect(onreopen).not.toHaveBeenCalled();
+        expect(onclose).not.toHaveBeenCalled();
+        resolve(true);
+        await delay(10);
+        expect(onmessageCalled).toBe(true);
+    });
+
+    it("should not reconnect if shouldReconnect's promise resolves to false", async () => {
+        server.on("connection", connection => connection.close());
+        ws = new SturdyWebSocket(URL, {
+            wsConstructor: w3cwebsocket,
+            minReconnectDelay: 5,
+            shouldReconnect: () => Promise.resolve(false),
+        });
+        const ondown = jest.fn();
+        const onreopen = jest.fn();
+        const onclose = jest.fn();
+        ws.ondown = ondown;
+        ws.onreopen = onreopen;
+        ws.onclose = onclose;
+        await delay(10);
+        expect(ondown).toHaveBeenCalledTimes(1);
+        expect(onreopen).not.toHaveBeenCalled();
+        expect(onclose).toHaveBeenCalledTimes(1);
+    });
+
     it("should use the protocol argument", done => {
         server.on("connection", connection => {
             expect(connection.protocol).toEqual("some-protocol");
@@ -250,4 +313,8 @@ function containsSubsequence<T>(haystack: T[], needle: T[]): boolean {
         }
         haystackIndex++;
     }
+}
+
+function delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
