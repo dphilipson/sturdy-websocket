@@ -278,20 +278,20 @@ export default class SturdyWebSocket implements WebSocket {
             );
             return;
         }
-        const shouldReconnectAnswer = shouldReconnect(event);
-        if (typeof shouldReconnectAnswer === "boolean") {
+        const willReconnect = shouldReconnect(event);
+        if (typeof willReconnect === "boolean") {
             this.handleWillReconnect(
-                shouldReconnectAnswer,
+                willReconnect,
                 event,
                 SHOULD_RECONNECT_FALSE_MESSAGE,
             );
         } else {
-            shouldReconnectAnswer.then(willReconnect => {
+            willReconnect.then(willReconnectResolved => {
                 if (this.isClosed) {
                     return;
                 }
                 this.handleWillReconnect(
-                    willReconnect,
+                    willReconnectResolved,
                     event,
                     SHOULD_RECONNECT_PROMISE_FALSE_MESSAGE,
                 );

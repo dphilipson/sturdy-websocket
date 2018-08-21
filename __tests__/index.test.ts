@@ -69,90 +69,6 @@ describe("basic functionality", () => {
         };
     });
 
-    it("should not reconnect if shouldReconnect returns false", done => {
-        let connectCount = 0;
-        server.on("connection", connection => {
-            connectCount++;
-            connection.close(
-                1000,
-                connectCount < 3 ? "Minor error" : "Grievous error",
-            );
-        });
-        ws = new SturdyWebSocket(URL, {
-            wsConstructor: w3cwebsocket,
-            minReconnectDelay: 10,
-            shouldReconnect: event => event.reason === "Minor error",
-        });
-        ws.onclose = event => {
-            expect(connectCount).toEqual(3);
-            expect(event.reason).toEqual("Grievous error");
-            done();
-        };
-    });
-
-    it("should not reconnect until shouldReconnect's promise resolves to true", async () => {
-        let connectCount = 0;
-        server.on("connection", connection => {
-            switch (connectCount++) {
-                case 0:
-                    connection.close();
-                    break;
-                case 1:
-                    connection.send("Success");
-                    break;
-                default:
-                    fail("More connections made than expected.");
-            }
-        });
-        let resolve: (b: boolean) => void = undefined!;
-        ws = new SturdyWebSocket(URL, {
-            wsConstructor: w3cwebsocket,
-            minReconnectDelay: 5,
-            shouldReconnect: () => new Promise(r => (resolve = r)),
-        });
-        const ondown = jest.fn();
-        const onreopen = jest.fn();
-        const onclose = jest.fn();
-        ws.ondown = ondown;
-        ws.onreopen = onreopen;
-        ws.onclose = onclose;
-        let onmessageCalled = false;
-        ws.onmessage = event => {
-            onmessageCalled = true;
-            expect(event.data).toEqual("Success");
-            expect(connectCount).toEqual(2);
-            expect(ondown).toHaveBeenCalledTimes(1);
-            expect(onreopen).toHaveBeenCalledTimes(1);
-            expect(onclose).not.toHaveBeenCalled();
-        };
-        await delay(10);
-        expect(ondown).toHaveBeenCalledTimes(1);
-        expect(onreopen).not.toHaveBeenCalled();
-        expect(onclose).not.toHaveBeenCalled();
-        resolve(true);
-        await delay(10);
-        expect(onmessageCalled).toBe(true);
-    });
-
-    it("should not reconnect if shouldReconnect's promise resolves to false", async () => {
-        server.on("connection", connection => connection.close());
-        ws = new SturdyWebSocket(URL, {
-            wsConstructor: w3cwebsocket,
-            minReconnectDelay: 5,
-            shouldReconnect: () => Promise.resolve(false),
-        });
-        const ondown = jest.fn();
-        const onreopen = jest.fn();
-        const onclose = jest.fn();
-        ws.ondown = ondown;
-        ws.onreopen = onreopen;
-        ws.onclose = onclose;
-        await delay(10);
-        expect(ondown).toHaveBeenCalledTimes(1);
-        expect(onreopen).not.toHaveBeenCalled();
-        expect(onclose).toHaveBeenCalledTimes(1);
-    });
-
     it("should use the protocol argument", done => {
         server.on("connection", connection => {
             expect(connection.protocol).toEqual("some-protocol");
@@ -199,6 +115,92 @@ describe("basic functionality", () => {
         } finally {
             wsGlobal.WebSocket = oldGlobalWebSocket;
         }
+    });
+});
+
+describe("shouldReconnect() option", () => {
+    it("should prevent reconnect if returning false", done => {
+        let connectCount = 0;
+        server.on("connection", connection => {
+            connectCount++;
+            connection.close(
+                1000,
+                connectCount < 3 ? "Minor error" : "Grievous error",
+            );
+        });
+        ws = new SturdyWebSocket(URL, {
+            wsConstructor: w3cwebsocket,
+            minReconnectDelay: 10,
+            shouldReconnect: event => event.reason === "Minor error",
+        });
+        ws.onclose = event => {
+            expect(connectCount).toEqual(3);
+            expect(event.reason).toEqual("Grievous error");
+            done();
+        };
+    });
+
+    it("should prevent reconnect until promise resolves to true", async () => {
+        let connectCount = 0;
+        server.on("connection", connection => {
+            switch (connectCount++) {
+                case 0:
+                    connection.close();
+                    break;
+                case 1:
+                    connection.send("Success");
+                    break;
+                default:
+                    fail("More connections made than expected.");
+            }
+        });
+        let resolve: (b: boolean) => void = undefined!;
+        ws = new SturdyWebSocket(URL, {
+            wsConstructor: w3cwebsocket,
+            minReconnectDelay: 5,
+            shouldReconnect: () => new Promise(r => (resolve = r)),
+        });
+        const ondown = jest.fn();
+        const onreopen = jest.fn();
+        const onclose = jest.fn();
+        ws.ondown = ondown;
+        ws.onreopen = onreopen;
+        ws.onclose = onclose;
+        let onmessageCalled = false;
+        ws.onmessage = event => {
+            onmessageCalled = true;
+            expect(event.data).toEqual("Success");
+            expect(connectCount).toEqual(2);
+            expect(ondown).toHaveBeenCalledTimes(1);
+            expect(onreopen).toHaveBeenCalledTimes(1);
+            expect(onclose).not.toHaveBeenCalled();
+        };
+        await delay(10);
+        expect(ondown).toHaveBeenCalledTimes(1);
+        expect(onreopen).not.toHaveBeenCalled();
+        expect(onclose).not.toHaveBeenCalled();
+        resolve(true);
+        await delay(10);
+        expect(onmessageCalled).toBe(true);
+    });
+
+    it("should prevent reconnect if promise resolves to false", async () => {
+        server.on("connection", connection => connection.close());
+        ws = new SturdyWebSocket(URL, {
+            wsConstructor: w3cwebsocket,
+            minReconnectDelay: 5,
+            shouldReconnect: () => Promise.resolve(false),
+        });
+        const ondown = jest.fn();
+        const onreopen = jest.fn();
+        const onclose = jest.fn();
+        ws.ondown = ondown;
+        ws.onreopen = onreopen;
+        ws.onclose = onclose;
+        await delay(10);
+        expect(ondown).toHaveBeenCalledTimes(1);
+        expect(onreopen).not.toHaveBeenCalled();
+        expect(onclose).toHaveBeenCalledTimes(1);
     });
 });
 
