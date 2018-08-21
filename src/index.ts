@@ -28,6 +28,11 @@ type WebSocketListeners = {
     [key: string]: EventListenerOrEventListenerObject[];
 };
 
+const SHOULD_RECONNECT_FALSE_MESSAGE =
+    "Provided shouldReconnect() returned false. Closing permanently.";
+const SHOULD_RECONNECT_PROMISE_FALSE_MESSAGE =
+    "Provided shouldReconnect() resolved to false. Closing permanently.";
+
 export default class SturdyWebSocket implements WebSocket {
     public static readonly DEFAULT_OPTIONS: AllOptions = {
         allClearResetTime: 5000,
@@ -265,21 +270,32 @@ export default class SturdyWebSocket implements WebSocket {
             this.lastKnownProtocol = this.ws.protocol;
             this.ws = undefined;
         }
-        const hasMoreAttempts = this.reconnectCount < maxReconnectAttempts;
-        if (hasMoreAttempts && shouldReconnect(event)) {
-            this.reconnectCount++;
-            this.reconnect();
-            this.dispatchEventOfType("down", event);
-        } else {
-            this.debugLog(
-                hasMoreAttempts
-                    ? "Provided shouldReconnect() returned false." +
-                      " Closing permanently."
-                    : `Failed to reconnect after ${maxReconnectAttempts}` +
-                      " attempts. Closing permanently.",
+        this.dispatchEventOfType("down", event);
+        if (this.reconnectCount >= maxReconnectAttempts) {
+            this.stopReconnecting(
+                event,
+                this.getTooManyFailedReconnectsMessage(),
             );
-            this.shutdown();
-            this.dispatchEventOfType("close", event);
+            return;
+        }
+        const shouldReconnectAnswer = shouldReconnect(event);
+        if (typeof shouldReconnectAnswer === "boolean") {
+            this.handleWillReconnect(
+                shouldReconnectAnswer,
+                event,
+                SHOULD_RECONNECT_FALSE_MESSAGE,
+            );
+        } else {
+            shouldReconnectAnswer.then(willReconnect => {
+                if (this.isClosed) {
+                    return;
+                }
+                this.handleWillReconnect(
+                    willReconnect,
+                    event,
+                    SHOULD_RECONNECT_PROMISE_FALSE_MESSAGE,
+                );
+            });
         }
     }
 
@@ -288,12 +304,25 @@ export default class SturdyWebSocket implements WebSocket {
         this.debugLog("WebSocket encountered an error.");
     }
 
+    private handleWillReconnect(
+        willReconnect: boolean,
+        event: CloseEvent,
+        denialReason: string,
+    ): void {
+        if (willReconnect) {
+            this.reconnect();
+        } else {
+            this.stopReconnecting(event, denialReason);
+        }
+    }
+
     private reconnect(): void {
         const {
             minReconnectDelay,
             maxReconnectDelay,
             reconnectBackoffFactor,
         } = this.options;
+        this.reconnectCount++;
         const retryTime = this.nextRetryTime;
         this.nextRetryTime = Math.max(
             minReconnectDelay,
@@ -307,6 +336,12 @@ export default class SturdyWebSocket implements WebSocket {
         this.debugLog(
             `WebSocket was closed. Re-opening in ${retryTimeSeconds} seconds.`,
         );
+    }
+
+    private stopReconnecting(event: CloseEvent, debugReason: string): void {
+        this.debugLog(debugReason);
+        this.shutdown();
+        this.dispatchEventOfType("close", event);
     }
 
     private shutdown(): void {
@@ -380,6 +415,14 @@ export default class SturdyWebSocket implements WebSocket {
             console.log(message);
         }
     }
+
+    private getTooManyFailedReconnectsMessage(): string {
+        const { maxReconnectAttempts } = this.options;
+        return `Failed to reconnect after ${maxReconnectAttempts} ${pluralize(
+            "attempt",
+            maxReconnectAttempts,
+        )}. Closing permanently.`;
+    }
 }
 
 function noop(): void {
@@ -397,4 +440,8 @@ function getDataByteLength(data: any): number | undefined {
     } else {
         return undefined;
     }
+}
+
+function pluralize(s: string, n: number): string {
+    return n === 1 ? s : `${s}s`;
 }
