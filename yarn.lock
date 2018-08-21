@@ -38,9 +38,9 @@
   version "8.0.31"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-8.0.31.tgz#d9af61093cf4bfc9f066ca34de0175012cfb0ce9"
 
-"@types/ws@^4.0.1":
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/@types/ws/-/ws-4.0.1.tgz#3309d4d02a1ea9cf617d638b9239a2e1e28ef21e"
+"@types/ws@^6.0.0":
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/@types/ws/-/ws-6.0.0.tgz#4787c4194c29cc6361208dcf4e580e208794e012"
   dependencies:
     "@types/events" "*"
     "@types/node" "*"
@@ -3436,9 +3436,9 @@ typedarray@^0.0.6:
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/typedarray/-/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
 
-typescript@^2.7.1:
-  version "2.8.1"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.8.1.tgz#6160e4f8f195d5ba81d4876f9c0cc1fbc0820624"
+typescript@^2.8.1:
+  version "2.9.2"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.9.2.tgz#1cbf61d05d6b96269244eb6a3bce4bd914e0f00c"
 
 uglify-js@^2.6:
   version "2.8.29"
@@ -3526,9 +3526,9 @@ webidl-conversions@^4.0.1, webidl-conversions@^4.0.2:
   version "4.0.2"
   resolved "https://registry.yarnpkg.com/webidl-conversions/-/webidl-conversions-4.0.2.tgz#a855980b1f0b6b359ba1d5d9fb39ae941faa63ad"
 
-websocket@^1.0.25:
-  version "1.0.25"
-  resolved "https://registry.yarnpkg.com/websocket/-/websocket-1.0.25.tgz#998ec790f0a3eacb8b08b50a4350026692a11958"
+websocket@^1.0.26:
+  version "1.0.26"
+  resolved "https://registry.yarnpkg.com/websocket/-/websocket-1.0.26.tgz#a03a01299849c35268c83044aa919c6374be8194"
   dependencies:
     debug "^2.2.0"
     nan "^2.3.3"
@@ -3613,6 +3613,12 @@ ws@^4.0.0:
     async-limiter "~1.0.0"
     safe-buffer "~5.1.0"
     ultron "~1.1.0"
+
+ws@^6.0.0:
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/ws/-/ws-6.0.0.tgz#eaa494aded00ac4289d455bac8d84c7c651cef35"
+  dependencies:
+    async-limiter "~1.0.0"
 
 xml-name-validator@^3.0.0:
   version "3.0.0"
