@@ -46,7 +46,7 @@
     "devDependencies": {
         "@types/jest": "^22.1.2",
         "@types/lodash.defaults": "^4.2.3",
-        "@types/ws": "^4.0.1",
+        "@types/ws": "^6.0.0",
         "husky": "^0.14.3",
         "jest": "^22.3.0",
         "lint-staged": "^6.1.0",
@@ -57,8 +57,8 @@
         "tslint": "^5.9.1",
         "tslint-config-prettier": "^1.7.0",
         "typescript": "^2.8.1",
-        "websocket": "^1.0.25",
-        "ws": "^4.0.0"
+        "websocket": "^1.0.26",
+        "ws": "^6.0.0"
     },
     "dependencies": {
         "lodash.defaults": "^4.2.0"

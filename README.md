@@ -12,7 +12,7 @@ reconnects when the WebSocket closes. If `send()` is called while the WebSocket
 is closed, then the messages are stored in a buffer and sent once the connection
 is reestablished.
 
-`SturdyWebSocket` fully implements the WebSocket API, as described [by
+`SturdyWebSocket` fully implements the WebSocket API as described [by
 MDN](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket), including the
 ready state constants, the `EventTarget` interface, and properties that you
 probably don't care about like `bufferedAmount`. This means that it can be used
@@ -170,22 +170,25 @@ failure.
 
 Default: `() => true`
 
-A function which is called when the backing WebSocket closes to determine if a
-reconnect attempt should be made. It is provided the `CloseEvent` as an
-argument. For example:
+A function which returns either a boolean or a promise resolving to a boolean,
+which is called when the backing WebSocket closes to determine if a reconnect
+attempt should be made. It is provided the `CloseEvent` as an argument. For
+example:
 ```js
 const ws = new SturdyWebSocket("wss://example.com", {
     shouldReconnect: closeEvent => closeEvent.reason === "Harmless error"
 });
 ```
 If this returns false, then the `SturdyWebSocket` is closed and `onclose` is
-called with the latest `CloseEvent`.
+called with the latest `CloseEvent`. If this returns a promise, then the socket
+waits for that promise to resolve to a boolean before either attempting to
+reconnect or closing.
 
 #### `wsConstructor`
 
 Default: `WebSocket`
 
-Constructor used for creating WebSocketes internally. Can be used to specify an
+Constructor used for creating WebSockets internally. Can be used to specify an
 implementation for the underlying WebSockets other than the default. This may be
 useful in environments where `WebSocket` is not available as a global variable,
 such as Node.js.
