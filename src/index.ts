@@ -1,21 +1,19 @@
 import defaults = require("lodash.defaults");
 
-export interface AllOptions {
-    allClearResetTime: number;
-    connectTimeout: number;
-    debug: boolean;
-    minReconnectDelay: number;
-    maxReconnectDelay: number;
-    maxReconnectAttempts: number;
-    reconnectBackoffFactor: number;
-    wsConstructor: new (
+export interface Options {
+    allClearResetTime?: number;
+    connectTimeout?: number;
+    debug?: boolean;
+    minReconnectDelay?: number;
+    maxReconnectDelay?: number;
+    maxReconnectAttempts?: number;
+    reconnectBackoffFactor?: number;
+    wsConstructor?: new (
         url: string,
         protocols?: string | string[],
     ) => WebSocket;
-    shouldReconnect(closeEvent: CloseEvent): boolean | Promise<boolean>;
+    shouldReconnect?(closeEvent: CloseEvent): boolean | Promise<boolean>;
 }
-
-export type Options = Partial<AllOptions>;
 
 type WebSocketListener<K extends keyof WebSocketEventMap> = (
     this: WebSocket,
@@ -23,7 +21,7 @@ type WebSocketListener<K extends keyof WebSocketEventMap> = (
 ) => any;
 
 type WebSocketListeners = {
-    [K in keyof WebSocketEventMap]?: Array<WebSocketListener<K>>
+    [K in keyof WebSocketEventMap]?: Array<WebSocketListener<K>>;
 } & {
     [key: string]: EventListenerOrEventListenerObject[];
 };
@@ -34,7 +32,7 @@ const SHOULD_RECONNECT_PROMISE_FALSE_MESSAGE =
     "Provided shouldReconnect() resolved to false. Closing permanently.";
 
 export default class SturdyWebSocket implements WebSocket {
-    public static readonly DEFAULT_OPTIONS: AllOptions = {
+    public static readonly DEFAULT_OPTIONS: Required<Options> = {
         allClearResetTime: 5000,
         connectTimeout: 5000,
         debug: false,
@@ -63,7 +61,7 @@ export default class SturdyWebSocket implements WebSocket {
     public readonly CLOSED = SturdyWebSocket.CLOSED;
 
     private readonly protocols?: string | string[];
-    private readonly options: AllOptions;
+    private readonly options: Required<Options>;
     private ws?: WebSocket;
     private hasBeenOpened = false;
     private isClosed = false;
