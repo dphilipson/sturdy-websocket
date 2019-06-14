@@ -15,13 +15,18 @@ export interface Options {
     shouldReconnect?(closeEvent: CloseEvent): boolean | Promise<boolean>;
 }
 
-type WebSocketListener<K extends keyof WebSocketEventMap> = (
+interface SturdyWebSocketEventMap extends WebSocketEventMap {
+    down: CloseEvent;
+    reopen: Event;
+}
+
+type WebSocketListener<K extends keyof SturdyWebSocketEventMap> = (
     this: WebSocket,
-    event: WebSocketEventMap[K],
+    event: SturdyWebSocketEventMap[K],
 ) => any;
 
 type WebSocketListeners = {
-    [K in keyof WebSocketEventMap]?: Array<WebSocketListener<K>>;
+    [K in keyof SturdyWebSocketEventMap]?: Array<WebSocketListener<K>>;
 } & {
     [key: string]: EventListenerOrEventListenerObject[];
 };
@@ -168,9 +173,13 @@ export default class SturdyWebSocket implements WebSocket {
         }
     }
 
-    public addEventListener<K extends keyof WebSocketEventMap>(
+    public addEventListener<K extends keyof SturdyWebSocketEventMap>(
         type: K,
-        listener: (this: WebSocket, event: WebSocketEventMap[K]) => void,
+        listener: (this: WebSocket, event: SturdyWebSocketEventMap[K]) => void,
+    ): void;
+    public addEventListener(
+        type: string,
+        listener: EventListenerOrEventListenerObject,
     ): void;
     public addEventListener(
         type: string,
@@ -186,6 +195,14 @@ export default class SturdyWebSocket implements WebSocket {
         return this.dispatchEventOfType(event.type, event);
     }
 
+    public removeEventListener<K extends keyof SturdyWebSocketEventMap>(
+        type: K,
+        listener: (this: WebSocket, event: SturdyWebSocketEventMap[K]) => void,
+    ): void;
+    public removeEventListener(
+        type: string,
+        listener: EventListenerOrEventListenerObject,
+    ): void;
     public removeEventListener(
         type: string,
         listener: EventListenerOrEventListenerObject,
