@@ -1,6 +1,6 @@
 {
     "name": "sturdy-websocket",
-    "version": "0.1.9",
+    "version": "0.1.10",
     "description": "Tiny WebSocket wrapper that reconnects and resends failed messages.",
     "main": "dist/index.js",
     "types": "dist/index",
