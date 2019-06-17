@@ -54,12 +54,12 @@ export default class SturdyWebSocket implements WebSocket {
     public static readonly CLOSING = 2;
     public static readonly CLOSED = 3;
 
-    public onclose: (event: CloseEvent) => void = noop;
-    public onerror: (event: Event) => void = noop;
-    public onmessage: (event: MessageEvent) => void = noop;
-    public onopen: (event: Event) => void = noop;
-    public ondown: (event: CloseEvent) => void = noop;
-    public onreopen: (event: Event) => void = noop;
+    public onclose: ((event: CloseEvent) => void) | null = null;
+    public onerror: ((event: Event) => void) | null = null;
+    public onmessage: ((event: MessageEvent) => void) | null = null;
+    public onopen: ((event: Event) => void) | null = null;
+    public ondown: ((event: CloseEvent) => void) | null = null;
+    public onreopen: ((event: Event) => void) | null = null;
     public readonly CONNECTING = SturdyWebSocket.CONNECTING;
     public readonly OPEN = SturdyWebSocket.OPEN;
     public readonly CLOSING = SturdyWebSocket.CLOSING;
@@ -387,22 +387,34 @@ export default class SturdyWebSocket implements WebSocket {
     private dispatchEventOfType(type: string, event: any): boolean {
         switch (type) {
             case "close":
-                this.onclose(event);
+                if (this.onclose) {
+                    this.onclose(event);
+                }
                 break;
             case "error":
-                this.onerror(event);
+                if (this.onerror) {
+                    this.onerror(event);
+                }
                 break;
             case "message":
-                this.onmessage(event);
+                if (this.onmessage) {
+                    this.onmessage(event);
+                }
                 break;
             case "open":
-                this.onopen(event);
+                if (this.onopen) {
+                    this.onopen(event);
+                }
                 break;
             case "down":
-                this.ondown(event);
+                if (this.ondown) {
+                    this.ondown(event);
+                }
                 break;
             case "reopen":
-                this.onreopen(event);
+                if (this.onreopen) {
+                    this.onreopen(event);
+                }
                 break;
         }
         if (type in this.listeners) {
@@ -438,10 +450,6 @@ export default class SturdyWebSocket implements WebSocket {
             maxReconnectAttempts,
         )}. Closing permanently.`;
     }
-}
-
-function noop(): void {
-    return undefined;
 }
 
 function getDataByteLength(data: any): number | undefined {
