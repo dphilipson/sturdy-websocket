@@ -254,7 +254,9 @@ ws.addEventListener("reopen", () => console.log("We're back!"));
 #### `down`
 
 Called when the backing WebSocket is closed but `SturdyWebSocket` will try to
-reconnect. Recieves the `CloseEvent` of the backing WebSocket.
+reconnect. Recieves the `CloseEvent` of the backing WebSocket. If this was
+triggered by a call to [`reconnect()`](#reconnect), then the event will be
+`undefined`.
 
 #### `reopen`
 

@@ -53,7 +53,7 @@ export default class SturdyWebSocket implements WebSocket {
     public onerror: ((event: Event) => void) | null = null;
     public onmessage: ((event: MessageEvent) => void) | null = null;
     public onopen: ((event: Event) => void) | null = null;
-    public ondown: ((event: CloseEvent) => void) | null = null;
+    public ondown: ((event: CloseEvent | undefined) => void) | null = null;
     public onreopen: ((event: Event) => void) | null = null;
     public readonly CONNECTING = SturdyWebSocket.CONNECTING;
     public readonly OPEN = SturdyWebSocket.OPEN;
