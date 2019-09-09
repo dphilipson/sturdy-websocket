@@ -95,7 +95,7 @@ export default class SturdyWebSocket implements WebSocket {
         } else {
             options = protocolsOrOptions;
         }
-        this.options = { ...SturdyWebSocket.DEFAULT_OPTIONS, ...options };
+        this.options = applyDefaultOptions(options);
         if (!this.options.wsConstructor) {
             if (typeof WebSocket !== "undefined") {
                 this.options.wsConstructor = WebSocket;
@@ -379,8 +379,8 @@ export default class SturdyWebSocket implements WebSocket {
             return;
         }
         // Use noop handlers instead of null because some WebSocket
-        // implementations, such as the one from isomorphic-ws, have issues with
-        // setting the handler to null.
+        // implementations, such as the one from isomorphic-ws, raise a stink on
+        // unhandled events.
         this.ws.onerror = noop;
         this.ws.onclose = noop;
         this.ws.onmessage = noop;
@@ -474,6 +474,18 @@ export default class SturdyWebSocket implements WebSocket {
             maxReconnectAttempts,
         )}. Closing permanently.`;
     }
+}
+
+function applyDefaultOptions(options: Options): Required<Options> {
+    const result: any = {};
+    Object.keys(SturdyWebSocket.DEFAULT_OPTIONS).forEach(key => {
+        const value = (options as any)[key];
+        result[key] =
+            value === undefined
+                ? (SturdyWebSocket.DEFAULT_OPTIONS as any)[key]
+                : value;
+    });
+    return result;
 }
 
 function getDataByteLength(data: any): number | undefined {
