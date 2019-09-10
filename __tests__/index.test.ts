@@ -1,4 +1,4 @@
-import { w3cwebsocket } from "websocket";
+import WebSocket from "isomorphic-ws";
 import { Server } from "ws";
 import SturdyWebSocket from "../src/index";
 
@@ -21,7 +21,7 @@ afterEach(() => {
 describe("basic functionality", () => {
     it("should make a connection like a normal WebSocket", done => {
         setupEchoServer();
-        ws = new SturdyWebSocket(URL, { wsConstructor: w3cwebsocket });
+        ws = new SturdyWebSocket(URL, { wsConstructor: WebSocket });
         const ondown = jest.fn();
         const onreopen = jest.fn();
         const onclose = jest.fn();
@@ -52,7 +52,7 @@ describe("basic functionality", () => {
                     fail("More connections made than expected.");
             }
         });
-        ws = new SturdyWebSocket(URL, { wsConstructor: w3cwebsocket });
+        ws = new SturdyWebSocket(URL, { wsConstructor: WebSocket });
         const ondown = jest.fn();
         const onreopen = jest.fn();
         const onclose = jest.fn();
@@ -70,18 +70,18 @@ describe("basic functionality", () => {
     });
 
     it("should use the protocol argument", done => {
-        server.on("connection", connection => {
+        server.on("connection", async connection => {
             expect(connection.protocol).toEqual("some-protocol");
             done();
         });
         ws = new SturdyWebSocket(URL, "some-protocol", {
-            wsConstructor: w3cwebsocket,
+            wsConstructor: WebSocket,
         });
     });
 
     it("should work with event listeners", done => {
         setupEchoServer();
-        ws = new SturdyWebSocket(URL, { wsConstructor: w3cwebsocket });
+        ws = new SturdyWebSocket(URL, { wsConstructor: WebSocket });
         ws.addEventListener("open", () => ws.send("Echo??"));
         ws.addEventListener("message", event => {
             expect(event.data).toEqual("Echo??");
@@ -96,7 +96,7 @@ describe("basic functionality", () => {
     it("should default to global WebSocket if no wsConstructor option", () => {
         const wsGlobal = global as GlobalWithWebSocket;
         const oldGlobalWebSocket = wsGlobal.WebSocket;
-        wsGlobal.WebSocket = w3cwebsocket;
+        wsGlobal.WebSocket = WebSocket;
         try {
             ws = new SturdyWebSocket(URL);
         } finally {
@@ -129,7 +129,7 @@ describe("shouldReconnect() option", () => {
             );
         });
         ws = new SturdyWebSocket(URL, {
-            wsConstructor: w3cwebsocket,
+            wsConstructor: WebSocket,
             minReconnectDelay: 10,
             shouldReconnect: event => event.reason === "Minor error",
         });
@@ -156,7 +156,7 @@ describe("shouldReconnect() option", () => {
         });
         let resolve: (b: boolean) => void = undefined!;
         ws = new SturdyWebSocket(URL, {
-            wsConstructor: w3cwebsocket,
+            wsConstructor: WebSocket,
             minReconnectDelay: 5,
             shouldReconnect: () => new Promise(r => (resolve = r)),
         });
@@ -187,7 +187,7 @@ describe("shouldReconnect() option", () => {
     it("should prevent reconnect if promise resolves to false", async () => {
         server.on("connection", connection => connection.close());
         ws = new SturdyWebSocket(URL, {
-            wsConstructor: w3cwebsocket,
+            wsConstructor: WebSocket,
             minReconnectDelay: 5,
             shouldReconnect: () => Promise.resolve(false),
         });
@@ -204,6 +204,52 @@ describe("shouldReconnect() option", () => {
     });
 });
 
+describe("reconnect()", () => {
+    it("should close the backing websocket and open a new one", async () => {
+        const serverOnOpen = jest.fn();
+        const serverOnClose = jest.fn();
+        server.on("connection", connection => {
+            serverOnOpen();
+            connection.on("close", serverOnClose);
+        });
+        ws = new SturdyWebSocket(URL, {
+            wsConstructor: WebSocket,
+        });
+        await delay(10);
+        expect(serverOnOpen).toHaveBeenCalledTimes(1);
+        expect(serverOnClose).not.toHaveBeenCalled();
+        ws.reconnect();
+        await delay(10);
+        expect(serverOnOpen).toHaveBeenCalledTimes(2);
+        expect(serverOnClose).toHaveBeenCalledWith(1000, expect.anything());
+    });
+
+    it("should call the down and reopen handlers", async () => {
+        ws = new SturdyWebSocket(URL, {
+            wsConstructor: WebSocket,
+        });
+        const ondown = jest.fn();
+        const onreopen = jest.fn();
+        ws.ondown = ondown;
+        ws.onreopen = onreopen;
+        await delay(10);
+        expect(ondown).not.toHaveBeenCalled();
+        expect(onreopen).not.toHaveBeenCalled();
+        ws.reconnect();
+        await delay(10);
+        expect(ondown).toHaveBeenCalledWith(undefined);
+        expect(onreopen).toHaveBeenCalled();
+    });
+
+    it("should throw an error if the websocket is already closed", async () => {
+        ws = new SturdyWebSocket(URL, {
+            wsConstructor: WebSocket,
+        });
+        ws.close();
+        expect(() => ws.reconnect()).toThrow(/closed/);
+    });
+});
+
 describe("retry backoff", () => {
     // A pretty scrappy test. We can use spies to see all the calls made to
     // setTimeout(), but not to see which of those calls are for scheduling
@@ -215,10 +261,10 @@ describe("retry backoff", () => {
 
     beforeEach(() => {
         timeoutRequests = [];
-        window.setTimeout = (...args: any[]) => {
+        window.setTimeout = ((...args: any[]) => {
             timeoutRequests.push(args[1]);
             return (originalSetTimeout as any)(...args);
-        };
+        }) as any;
     });
     afterEach(() => {
         window.setTimeout = originalSetTimeout;
@@ -229,7 +275,7 @@ describe("retry backoff", () => {
             connection.close();
         });
         ws = new SturdyWebSocket(URL, {
-            wsConstructor: w3cwebsocket,
+            wsConstructor: WebSocket,
             minReconnectDelay: 1,
             maxReconnectDelay: 9,
             maxReconnectAttempts: 7,
@@ -265,7 +311,7 @@ describe("buffering", () => {
         }, 20);
 
         ws = new SturdyWebSocket(URL, {
-            wsConstructor: w3cwebsocket,
+            wsConstructor: WebSocket,
             minReconnectDelay: 10,
         });
         ws.send("Finally");

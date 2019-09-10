@@ -1,5 +1,3 @@
-import defaults = require("lodash.defaults");
-
 export interface Options {
     allClearResetTime?: number;
     connectTimeout?: number;
@@ -8,10 +6,7 @@ export interface Options {
     maxReconnectDelay?: number;
     maxReconnectAttempts?: number;
     reconnectBackoffFactor?: number;
-    wsConstructor?: new (
-        url: string,
-        protocols?: string | string[],
-    ) => WebSocket;
+    wsConstructor?: new (url: string, protocols?: string | string[]) => any;
     shouldReconnect?(closeEvent: CloseEvent): boolean | Promise<boolean>;
 }
 
@@ -58,7 +53,7 @@ export default class SturdyWebSocket implements WebSocket {
     public onerror: ((event: Event) => void) | null = null;
     public onmessage: ((event: MessageEvent) => void) | null = null;
     public onopen: ((event: Event) => void) | null = null;
-    public ondown: ((event: CloseEvent) => void) | null = null;
+    public ondown: ((event: CloseEvent | undefined) => void) | null = null;
     public onreopen: ((event: Event) => void) | null = null;
     public readonly CONNECTING = SturdyWebSocket.CONNECTING;
     public readonly OPEN = SturdyWebSocket.OPEN;
@@ -89,7 +84,7 @@ export default class SturdyWebSocket implements WebSocket {
     constructor(
         public readonly url: string,
         protocolsOrOptions?: string | string[] | Options,
-        options?: Options,
+        options: Options = {},
     ) {
         if (
             protocolsOrOptions == null ||
@@ -100,7 +95,7 @@ export default class SturdyWebSocket implements WebSocket {
         } else {
             options = protocolsOrOptions;
         }
-        this.options = defaults({}, options, SturdyWebSocket.DEFAULT_OPTIONS);
+        this.options = applyDefaultOptions(options);
         if (!this.options.wsConstructor) {
             if (typeof WebSocket !== "undefined") {
                 this.options.wsConstructor = WebSocket;
@@ -158,9 +153,7 @@ export default class SturdyWebSocket implements WebSocket {
     }
 
     public close(code?: number, reason?: string): void {
-        if (this.ws) {
-            this.ws.close(code, reason);
-        }
+        this.disposeSocket(code, reason);
         this.shutdown();
         this.debugLog("WebSocket permanently closed by client.");
     }
@@ -171,6 +164,16 @@ export default class SturdyWebSocket implements WebSocket {
         } else {
             this.messageBuffer.push(data);
         }
+    }
+
+    public reconnect(): void {
+        if (this.isClosed) {
+            throw new Error(
+                "Cannot call reconnect() on socket which is permanently closed.",
+            );
+        }
+        this.disposeSocket(1000, "Client requested reconnect.");
+        this.handleClose(undefined);
     }
 
     public addEventListener<K extends keyof SturdyWebSocketEventMap>(
@@ -220,7 +223,7 @@ export default class SturdyWebSocket implements WebSocket {
         }
         const { connectTimeout, wsConstructor } = this.options;
         this.debugLog(`Opening new WebSocket to ${this.url}.`);
-        const ws = new wsConstructor(this.url, this.protocols);
+        const ws: WebSocket = new wsConstructor(this.url, this.protocols);
         ws.onclose = event => this.handleClose(event);
         ws.onerror = event => this.handleError(event);
         ws.onmessage = event => this.handleMessage(event);
@@ -229,7 +232,8 @@ export default class SturdyWebSocket implements WebSocket {
             // If this is running, we still haven't opened the websocket.
             // Kill it so we can try again.
             this.clearConnectTimeout();
-            ws.close();
+            this.disposeSocket();
+            this.handleClose(undefined);
         }, connectTimeout);
         this.ws = ws;
     }
@@ -273,7 +277,7 @@ export default class SturdyWebSocket implements WebSocket {
         this.dispatchEventOfType("message", event);
     }
 
-    private handleClose(event: CloseEvent): void {
+    private handleClose(event: CloseEvent | undefined): void {
         if (this.isClosed) {
             return;
         }
@@ -293,7 +297,7 @@ export default class SturdyWebSocket implements WebSocket {
             );
             return;
         }
-        const willReconnect = shouldReconnect(event);
+        const willReconnect = !event || shouldReconnect(event);
         if (typeof willReconnect === "boolean") {
             this.handleWillReconnect(
                 willReconnect,
@@ -321,17 +325,17 @@ export default class SturdyWebSocket implements WebSocket {
 
     private handleWillReconnect(
         willReconnect: boolean,
-        event: CloseEvent,
+        event: CloseEvent | undefined,
         denialReason: string,
     ): void {
         if (willReconnect) {
-            this.reconnect();
+            this.reestablishConnection();
         } else {
             this.stopReconnecting(event, denialReason);
         }
     }
 
-    private reconnect(): void {
+    private reestablishConnection(): void {
         const {
             minReconnectDelay,
             maxReconnectDelay,
@@ -353,16 +357,36 @@ export default class SturdyWebSocket implements WebSocket {
         );
     }
 
-    private stopReconnecting(event: CloseEvent, debugReason: string): void {
+    private stopReconnecting(
+        event: CloseEvent | undefined,
+        debugReason: string,
+    ): void {
         this.debugLog(debugReason);
         this.shutdown();
-        this.dispatchEventOfType("close", event);
+        if (event) {
+            this.dispatchEventOfType("close", event);
+        }
     }
 
     private shutdown(): void {
         this.isClosed = true;
         this.clearAllTimeouts();
         this.messageBuffer = [];
+    }
+
+    private disposeSocket(closeCode?: number, reason?: string): void {
+        if (!this.ws) {
+            return;
+        }
+        // Use noop handlers instead of null because some WebSocket
+        // implementations, such as the one from isomorphic-ws, raise a stink on
+        // unhandled events.
+        this.ws.onerror = noop;
+        this.ws.onclose = noop;
+        this.ws.onmessage = noop;
+        this.ws.onopen = noop;
+        this.ws.close(closeCode, reason);
+        this.ws = undefined;
     }
 
     private clearAllTimeouts(): void {
@@ -452,6 +476,18 @@ export default class SturdyWebSocket implements WebSocket {
     }
 }
 
+function applyDefaultOptions(options: Options): Required<Options> {
+    const result: any = {};
+    Object.keys(SturdyWebSocket.DEFAULT_OPTIONS).forEach(key => {
+        const value = (options as any)[key];
+        result[key] =
+            value === undefined
+                ? (SturdyWebSocket.DEFAULT_OPTIONS as any)[key]
+                : value;
+    });
+    return result;
+}
+
 function getDataByteLength(data: any): number | undefined {
     if (typeof data === "string") {
         // UTF-16 strings use two bytes per character.
@@ -467,4 +503,8 @@ function getDataByteLength(data: any): number | undefined {
 
 function pluralize(s: string, n: number): string {
     return n === 1 ? s : `${s}s`;
+}
+
+function noop(): void {
+    // Nothing.
 }
